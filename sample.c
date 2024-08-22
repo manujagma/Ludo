@@ -1,215 +1,134 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
-#define HOME -1
-#define START_POINT 0
 #define NUM_PLAYERS 4
-#define BOARD_SIZE 51
-#define GREEN_HOME 0  // Placeholder value for green home
+#define NUM_PIECES 4
 
-typedef struct {
-    int piecesPosition;
-    int startgame;
-} Pieces;
+int countPiecesAtPosition(int position, int currentPlayer, int *enemyIndex, int pieces[NUM_PLAYERS][NUM_PIECES]) {
+    int count = 0;
+    int firstPlayerIndex = -1;
 
-typedef struct {
-    Pieces pieces[4];
-    char playerColor;
-    int startGamePieces;
-} Player;
+    // Iterate over all players and their pieces
+    for (int i = 0; i < NUM_PLAYERS; i++) {
+        for (int j = 0; j < NUM_PIECES; j++) {
+            if (pieces[i][j] == position) {
+                printf("Player %d's piece %d is at position %d\n", i + 1, j + 1, position);
 
-typedef struct {
-    int boardNum;
-    int piecesNum;
-} Board;
-
-// Function prototypes
-int roll();
-void initializePlayers(Player *players);
-void initializeBoard(Board *board);
-int determineStartingPlayer();
-void playermove(Player *players, Board *board, int playerNum);
-void playerAiMove(Player *players, Board *board, int playerNum);
-void printPlayers(const Player *players);
-int canMoveToPosition(Player *player, int pieceIndex, int rollNum);
-int canCreateBlock(Player *player, int pieceIndex, int rollNum, Board *board);
-int shouldBreakBlock(Player *player, int pieceIndex, int rollNum, Board *board);
-
-int main() {
-    srand(time(NULL));
-
-    Player players[NUM_PLAYERS];
-    Board board[BOARD_SIZE];
-
-    initializePlayers(players);
-    initializeBoard(board);
-
-    int startPlayer = determineStartingPlayer();
-    printf("Starting Player: %d\n", startPlayer);
-
-    printPlayers(players);
-
-    // Example game loop (simplified)
-    while (1) {
-        for (int i = 0; i < NUM_PLAYERS; i++) {
-            if (players[i].playerColor == 'G') {  // Example condition for AI player
-                playerAiMove(players, board, i);
-            } else {
-                playermove(players, board, i);
+                if (firstPlayerIndex == -1) {
+                    firstPlayerIndex = i;  // Set the first player index who has a piece at this position
+                } else if (firstPlayerIndex != i) {
+                    *enemyIndex = i;  // If a different player is found, set the enemy index
+                }
+                count++;
             }
         }
-        // Add conditions to break the loop based on game end conditions
     }
+
+    // Return the count (which will be 1, 2, or 3)
+    if (count == 4 || position == 0) {
+        return 0;  // Return 0 if four pieces are in the same position, or the position is 0
+    }
+
+    return count;
+}
+
+void handlePieceMovement(int position, int currentPlayer, int pieces[NUM_PLAYERS][NUM_PIECES]) {
+    int enemyIndex = -1;  // Initialize to -1 to indicate no enemy found
+    int result = countPiecesAtPosition(position, currentPlayer, &enemyIndex, pieces);
+
+    if (result == 1) {
+        printf("Player %d's piece can move freely.\n", currentPlayer + 1);
+    } else if (result > 1) {
+        if (enemyIndex != -1) {
+            printf("Player %d's piece is blocked by enemy pieces.\n", currentPlayer + 1);
+        } else {
+            printf("Player %d's pieces are blocking themselves at position %d.\n", currentPlayer + 1, position);
+        }
+    } else {
+        printf("No valid pieces at position %d.\n", position);
+    }
+}
+
+int main() {
+    // Example 2D array representing pieces' positions
+    int pieces[NUM_PLAYERS][NUM_PIECES] = {
+        {10, 20, 30, 10},  // Player 1
+        {15, 10, 25, 35},  // Player 2
+        {30, 10, 45, 50},  // Player 3
+        {10, 20, 30, 40}   // Player 4
+    };
+
+    int testPosition = 10;
+    int currentPlayer = 0;  // Example: Player 1 is the current player
+
+    handlePieceMovement(testPosition, currentPlayer, pieces);
 
     return 0;
 }
+/*void playerAiCall(Player *player,Borad *borad,int num,int *piecesToHome,int rollNum,int currentPlayer)
+{
+    if (num==1)
+    {
+        greenplayer(&player,&borad,rollNum,&piecesToHome);
+    }
 
-int roll() {
-    return (rand() % 6) + 1;
-}
+}*/
+    /*
+    if (player[currentPlayer].playercolor=='G')
+    {
+        greenplayer(&player[currentPlayer],&borad,rollNum,&picesToHome,&piecesNum);
 
-void initializePlayers(Player *players) {
-    char colors[] = {'R', 'G', 'Y', 'B'};
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        players[i].playerColor = colors[i];
-        players[i].startGamePieces = 0;
-        for (int j = 0; j < 4; j++) {
-            players[i].pieces[j].piecesPosition = HOME;
-            players[i].pieces[j].startgame = -1;
+        if (player[currentPlayer].pieces[*piecesNum].piecesPosition==home && player[currentPlayer].pieces[*piecesNum].startgame==0)
+        {
+           player[currentPlayer].pieces[*piecesNum].piecesPosition=greenHome;//please assign value
+           player[currentPlayer].pieces[*piecesNum].startgame=1;
+
+           borad[greenHome].piecesNum+=4;//green go on 4,8,12
         }
-    }
-}
 
-void initializeBoard(Board *board) {
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        board[i].boardNum = i;
-        board[i].piecesNum = 0;
-    }
-}
 
-int determineStartingPlayer() {
-    int rolls[NUM_PLAYERS];
-    int highestRoll = 0;
-    int startPlayer = 0;
 
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        rolls[i] = roll();
-        if (rolls[i] > highestRoll) {
-            highestRoll = rolls[i];
-            startPlayer = i;
-        }
-    }
 
-    return startPlayer;
-}
 
-void playermove(Player *players, Board *board, int playerNum) {
-    int rollNum = roll();
-    Player *currentPlayer = &players[playerNum];
-    printf("Player %c rolled a %d\n", currentPlayer->playerColor, rollNum);
 
-    // Example movement logic
-    for (int i = 0; i < 4; i++) {
-        if (currentPlayer->pieces[i].piecesPosition != HOME) {
-            int newPosition = (currentPlayer->pieces[i].piecesPosition + rollNum) % BOARD_SIZE;
-            board[currentPlayer->pieces[i].piecesPosition].piecesNum--;
-            currentPlayer->pieces[i].piecesPosition = newPosition;
-            board[newPosition].piecesNum++;
-            break;
-        }
-    }
-}
 
-void playerAiMove(Player *players, Board *board, int playerNum) {
-    Player *currentPlayer = &players[playerNum];
-    int rollNum = roll();
-    printf("AI Player %c rolled a %d\n", currentPlayer->playerColor, rollNum);
 
-    if (currentPlayer->playerColor != 'G') {
-        playermove(players, board, playerNum);  // Placeholder for other AI logic
-        return;
-    }
 
-    // Logic for green player
-    if (rollNum == 6) {
-        for (int i = 0; i < 4; i++) {
-            if (currentPlayer->pieces[i].piecesPosition == HOME) {
-                // Move piece out of home if possible
-                currentPlayer->pieces[i].piecesPosition = GREEN_HOME;
-                board[GREEN_HOME].piecesNum++;
-                return;
+
+
+
+
+
+
+
+
+
+
+
+
+            //stay in borad size
+            if (player[currentPlayer].pieces[*piecesNum].piecesPosition>=Borad_size)
+            {
+                player[currentPlayer].pieces[*piecesNum].piecesPosition%=Borad_size;
+            }
+
+        }*/
+for (short i = 0; i < numPlayers; i++)
+        {
+
+            int piecesPosition = player->pieces[i].piecesPosition; // player has pieces
+            for (short j = 0; j < numPlayers; j++)
+            {
+                int piecesPosition1 = player[i].pieces[j].piecesPosition; // enemy players pieces
+
+                if (borad[newCurrentPiecesPosition].piecesName == 2)
+                {
+                }
+                if (*picesToHome == 2 && newCurrentPiecesPosition == piecesPosition && rollNum == 1)
+                {
+                    /* printf("%d from %d to %d, player %s's piece %d makes a block with piece %d\n",
+                      previousCurrentPiecesPosition, newCurrentPiecesPosition, piecesPosition,
+                         player->playercolor, *piecesNum, piecesPosition);*/
+                    rollNum = 0;
+                }
             }
         }
-    }
-
-    // Prioritize moving pieces home or creating blocks
-    for (int i = 0; i < 4; i++) {
-        if (canMoveToPosition(currentPlayer, i, rollNum)) {
-            int newPosition = (currentPlayer->pieces[i].piecesPosition + rollNum) % BOARD_SIZE;
-            board[currentPlayer->pieces[i].piecesPosition].piecesNum--;
-            currentPlayer->pieces[i].piecesPosition = newPosition;
-            board[newPosition].piecesNum++;
-            return;
-        }
-    }
-
-    // Check for block breaking
-    for (int i = 0; i < 4; i++) {
-        if (shouldBreakBlock(currentPlayer, i, rollNum, board)) {
-            int newPosition = (currentPlayer->pieces[i].piecesPosition + rollNum) % BOARD_SIZE;
-            board[currentPlayer->pieces[i].piecesPosition].piecesNum--;
-            currentPlayer->pieces[i].piecesPosition = newPosition;
-            board[newPosition].piecesNum++;
-            return;
-        }
-    }
-}
-
-int canMoveToPosition(Player *player, int pieceIndex, int rollNum) {
-    int newPosition = player->pieces[pieceIndex].piecesPosition + rollNum;
-    if (newPosition >= BOARD_SIZE) {
-        newPosition %= BOARD_SIZE;
-    }
-    // Add any additional rules for moving to this position
-    return player->pieces[pieceIndex].piecesPosition != HOME;
-}
-
-int canCreateBlock(Player *player, int pieceIndex, int rollNum, Board *board) {
-    int newPosition = player->pieces[pieceIndex].piecesPosition + rollNum;
-    if (newPosition >= BOARD_SIZE) {
-        newPosition %= BOARD_SIZE;
-    }
-    // Check if moving to this position creates a block
-    return board[newPosition].piecesNum > 1;
-}
-
-int shouldBreakBlock(Player *player, int pieceIndex, int rollNum, Board *board) {
-    int newPosition = player->pieces[pieceIndex].piecesPosition + rollNum;
-    if (newPosition >= BOARD_SIZE) {
-        newPosition %= BOARD_SIZE;
-    }
-    // Check if breaking a block is necessary
-    for (int i = 0; i < 4; i++) {
-        if (player->pieces[i].piecesPosition != HOME && i != pieceIndex) {
-            int forwardPosition = player->pieces[i].piecesPosition + rollNum;
-            if (forwardPosition >= BOARD_SIZE) {
-                forwardPosition %= BOARD_SIZE;
-            }
-            if (board[forwardPosition].piecesNum == 0) {
-                return 0;  // Another piece can move forward without breaking the block
-            }
-        }
-    }
-    return 1;
-}
-
-void printPlayers(const Player *players) {
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        printf("Player %d (Color: %c):\n", i + 1, players[i].playerColor);
-        for (int j = 0; j < 4; j++) {
-            printf("  Piece %d: Position = %d, StartGame = %d\n",
-                   j + 1, players[i].pieces[j].piecesPosition, players[i].pieces[j].startgame);
-        }
-    }
-}

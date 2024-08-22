@@ -1,0 +1,147 @@
+        int piecesWay= rand()%2+1;
+        if (piecesWay==1)
+        {
+            *piecesToHome==2;//make clock wise dirction
+        }else if(piecesWay==2)
+        {
+            *piecesToHome==3;//make counter clock wise dirction
+        }
+
+
+
+
+
+                            if (borad[player->playerPiecesposition[i]].piecesNum == 8 && borad[newPlayerPiesesPosition].piecesNum == 8) 
+
+                    {
+                           //can't move this file
+                    }
+                    if (borad[player->playerPiecesposition[i]].piecesNum == 4 && borad[newPlayerPiesesPosition].piecesNum == 12) {
+
+                        //can't move this pieces 
+                    }
+                    can you make function that accept int and it check brfore i say array that element have if this position in one pieces he return 1 if two in that array he return 2 and last if three pieces in that array he return 3 if there is no in that position he return 0 for main 
+                    short capturedBlock(Borad *borad, Player *player, int currentPiecesPositition, int currentPlayer, int pastPiecesNum)
+{
+    if (player[currentPlayer].playercolor == 'G')
+    {
+        if (borad[pastPiecesNum].piecesNum == 4)
+        {
+            switch (borad[currentPiecesPositition].piecesNum)
+            {
+            case 3:
+                return 1;
+            case 6:
+                return 2;
+            case 9:
+                return 3;
+            case 5:
+                return 4;
+            case 10:
+                return 5;
+            case 15:
+                return 6;
+            case 7:
+                return 7;
+            case 14:
+                return 8;
+            case 21:
+                return 9;
+            }
+        }
+        else if (borad[pastPiecesNum].piecesNum == 8)
+        {
+            switch (borad[currentPiecesPositition].piecesNum)
+            {
+            case 3:
+                return 10;
+            case 6:
+                return 11;
+            case 9:
+                return 12;
+            case 5:
+                return 13;
+            case 10:
+                return 14;
+            case 15:
+                return 15;
+            case 7:
+                return 16;
+            case 14:
+                return 17;
+            case 21:
+                return 18;
+            }
+        }
+        else if (borad[pastPiecesNum].piecesNum == 12)
+        {
+            switch (borad[currentPiecesPositition].piecesNum)
+            {
+            case 3:
+                return 19;
+            case 6:
+                return 20;
+            case 9:
+                return 21;
+            case 5:
+                return 22;
+            case 10:
+                return 23;
+            case 15:
+                return 24;
+            case 7:
+                return 25;
+            case 14:
+                return 26;
+            case 21:
+                return 27;
+            }
+        }
+    }
+}
+void checkplayer(Player *player, Borad *borad, int *position)
+{
+    if (borad[*position].piecesNum == 0)
+    {
+        borad[*position].piecesName = 1;
+        switch (player->playercolor)
+        {
+        case 'G':
+            borad[*position].piecesNum += 1;
+
+            break;
+        case 'Y':
+            borad[*position].piecesNum += 2;
+
+            break;
+        case 'R':
+            borad[*position].piecesNum += 3;
+            break;
+        case 'B':
+            borad[*position].piecesNum += 4;
+            break;
+        }
+    }
+    if (borad[*position].piecesNum > 5)
+    {
+        borad[*position].piecesName = 2;
+
+        switch (player->playercolor)
+        {
+        case 'G':
+            borad[*position].piecesNum += 1;
+
+            break;
+        case 'Y':
+            borad[*position].piecesNum += 2;
+
+            break;
+        case 'R':
+            borad[*position].piecesNum += 3;
+            break;
+        case 'B':
+            borad[*position].piecesNum += 4;
+            break;
+        }
+    }
+}
