@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
+
+
 
 #define base -1
 #define startPoint 0
@@ -11,6 +12,12 @@
 #define bawanaCell 9
 #define KotuwaCell 27
 #define PitaKotuwaCell 46
+#define redHome 00
+#define blueHome 91
+#define yellowHome 18
+
+
+int HomeLabels[5] = {1,2,3,4,5};
 
 typedef struct
 {
@@ -20,7 +27,12 @@ typedef struct
     int piecesDirection;
     short pastHomeHowTimes;
     short pastpiecesDirection;
-    short piecesBlock;
+    int piecesBlock;
+    int pieceInHomeCell;
+    int mystryCellTurns;
+    int movementModifier;
+    int turnSkkiped;
+    int mysteryCell;
 
 } Pieces;
 // player area
@@ -29,9 +41,9 @@ typedef struct Player
     Pieces pieces[4]; // make 4 for pieces for one player
     char playercolor;
     int startGamePieces;
-    short playerPiecesposition[4];
     short piecesBlock;
-    int mystryCell;
+    int finishPieces;
+    
 
 } Player;
 typedef struct Borad
@@ -42,7 +54,7 @@ typedef struct Borad
     short mysteryCell;
 
 } Borad;
-    int pieces[4][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
+    int pieces[4][4] = {{base, base, base, base},{base, base, base, base}, {base, base, base, base},{base, base, base, base}};
 
     /*
     player1    pieces[0][0] = 0  pieces[0][1] = 0  pieces[0][2] = 0  pieces[0][3] = 0
@@ -73,7 +85,11 @@ void blockDirectionChecker(Player *player, Borad *borad, int cureentPiecesDirect
 void piecesCaptured(int enemyPlayer, int firstpieces, int secondpieces, int thirdpieces, Player *player, Borad *borad);
 void blockBreaker(Player *player,Borad *borad,int allayplayer,int pieces1,int pieces2,int pieces3);
 void playerCall(Player *player,Borad *borad,int playerNum,int*piecesToHome,int rollNum,int (*piecesNum[3]));
-void mystryCell(Player *player, Borad *borad,int firstPiece,int secondPiece,int thirdPiece,int *movementModifier,int *trunSkipper,int pieces[numPlayers][4]);
+void mystryCell(Player *player, Borad *borad,int firstPiece,int secondPiece,int thirdPiece,int cureentplayer);
+void greenplayer(Player *player,Borad *borad,int playerNum,int rollNum,int *piecesToHome,int (*piecesNum[3]));
+void yellowplayer(Player *player,Borad *borad,int playerNum,int rollNum,int *piecesToHome,int (*piecesNum[3]));
+void redplayer(Player *player,Borad *borad,int playerNum,int rollNum,int *piecesToHome,int (*piecesNum[3]));
+void blueplayer(Player *player,Borad *borad,int playerNum,int rollNum,int *piecesToHome,int (*piecesNum[3]));
 
 
 
@@ -140,8 +156,7 @@ int main()
         break;
     }
     //
-
-    printPlayers(player);
+    boradconst(player, borad);
 }
 int playerstart(int *startPlayer)
 {
@@ -201,99 +216,97 @@ void playerInstall(Player *player)
 
 void boradconst(Player *player, Borad *borad)
 {
-    player;
-    borad;
     int playerNum = 0;
     int rollNum = 0;
-    int *piecesNum[3] = {0,0,0};
-    int howManyPiecesStart=0;
-    int picesToHome = 0; 
-    int howManyTimesPlay[numPlayers]={0,0,0,0};
-    int checkSixTimes=0;
-    
-
-
+    int *piecesNum[3] = {0, 0, 0};
+    int howManyPiecesStart = 0;
+    int picesToHome = 0;
+    int howManyTimesPlay[numPlayers] = {0, 0, 0, 0};
+    int checkSixTimes = 0;
+    int countRound = 0;
     while (1)
     {
 
         // role dice
         rollNum = roll();
         if (rollNum == 6)
-        {            
-            playerNum;
+        {
+
             checkSixTimes++;
-            playerCall(player,borad,playerNum,&picesToHome,rollNum,piecesNum);
-
-
             if (checkSixTimes == 3)
             {
-                if (player[playerNum].piecesBlock == 1)
-                {   
-                    printf("%c player roll 6 in three times so remove BLOCK in %d position and move them six times\n");
+                for (int i = 0; i < 4; i++)
+                {
+                    if (player[playerNum].pieces[i].mysteryCell == 1 && player[playerNum].pieces[i].turnSkkiped > 0 && player[playerNum].pieces[i].piecesPosition == KotuwaCell)
+                    {
+                        player[playerNum].pieces[i].pastHomeHowTimes = 0;
+                        player[playerNum].pieces[i].pastpiecesDirection = 0;
+                        player[playerNum].pieces[i].piecesCaptured = 0;
+                        player[playerNum].pieces[i].piecesDirection = 0;
+                        player[playerNum].pieces[i].piecesPosition = base;
+                        player[playerNum].pieces[i].startgame = -1;
+                        pieces[playerNum][i] = base;
+                        printf("%c player %d pieces go to base because he trapped in Kotuwa cell\n", player[playerNum].playercolor, i);
+                    }
+                }
 
-                    int array[3]={0,0,0};
+                if (player[playerNum].piecesBlock == 1)
+                {
+                    int array[2] = {0, 0};
                     for (int i = 0; i < 4; i++)
                     {
-                        if (player[playerNum].pieces[i].piecesBlock == 1 || player[playerNum].pieces[i].piecesBlock == 2)
+                        for (int j = 0; j < 4; j++)
                         {
-                            if (array[0] == 0)
+
+                            if (i != j && player[playerNum].pieces[i].piecesBlock == 1 && player[playerNum].pieces[j].piecesBlock == 1)
                             {
-                                array[0]=i;
-                            }
-                            else if (array[1] == 0)
-                            {
-                                array[1]=i;
-                            }
-                            else if (array[2] == 0)
-                            {
-                                array[2]=i;
+                                if (player[playerNum].pieces[i].piecesPosition == player[playerNum].pieces[j].piecesPosition)
+                                {
+                                    if (array[0] == 0)
+                                    {
+                                        array[0] = i;
+                                    }
+                                    else if (array[1] == 0)
+                                    {
+                                        array[1] = i;
+                                    }
+                                }
                             }
                         }
                     }
-                    int arry1[3]={array[0],0,0,};
-                    playermove(&playerNum,arry1,6,0,1,howManyPiecesStart);
-                    int arry2[3]={array[2],0,0};
-                    playermove(&playerNum,arry2,6,0,1,howManyPiecesStart);
-                    int arry3[3]={array[3],0,0};
-                    playermove(&playerNum,arry3,6,0,1,howManyPiecesStart);
+                    int arry1[3] = { array[0],-1,-1};
+                    playermove(&playerNum, arry1, 6, 0, 1, howManyPiecesStart);
+                    int arry2[3] = {array[2], -1, -1};
+                    playermove(&playerNum, arry2, 6, 0, 1, howManyPiecesStart);
                     // break down block and move them six times
-                    blockBreaker(player,borad,playerNum,array[0],array[1],array[2]);
-                    
+                    blockBreaker(player, borad, playerNum, array[0], array[1], -1);
                 }
-                playerNum++;
-                playerCall(player,borad,playerNum,&picesToHome,rollNum,piecesNum);
-            }else{
-               
-                playerNum++;
-                playerCall(player,borad,playerNum,&picesToHome,rollNum,piecesNum);
             }
-
         }
-        else
+        howManyTimesPlay[playerNum]++;
+        playerCall(player, borad, playerNum, &picesToHome, rollNum, piecesNum);
+        playermove(&playerNum, piecesNum[3], rollNum, &picesToHome, 0, howManyPiecesStart);
+        playerNum++;
+        if (howManyTimesPlay[0] != 0 && howManyTimesPlay[0] == howManyTimesPlay[1] && howManyTimesPlay[1] == howManyTimesPlay[2] && howManyTimesPlay[2] == howManyTimesPlay[3])
         {
-            howManyTimesPlay[playerNum]++;
-            playerNum++;
-            playerCall(player, borad, playerNum, &picesToHome, rollNum, piecesNum);
-        }
-        if (howManyTimesPlay[0] != 1 && howManyTimesPlay[0] == howManyTimesPlay[1] && howManyTimesPlay[1] == howManyTimesPlay[2] && howManyTimesPlay[2] == howManyTimesPlay[3])
-        {
+            countRound++;
             if (howManyPiecesStart > 2 && (howManyTimesPlay[0] % 4) == 1)
             {
-                int stop=1;
+                int stop = 1;
                 while (stop)
-                {                
-                int mystryNum = roll() % 52;
-                if(borad[mystryNum].mysteryCell!= 1)
                 {
-                borad[mystryNum].mysteryCell = 1;
-                stop=0;
-                }                    
+                    int mystryNum = roll() % 52;
+                    if (borad[mystryNum].mysteryCell != 1)
+                    {
+                        borad[mystryNum].mysteryCell = 1;
+                        stop = 0;
+                    }
                 }
-
             }
 
             //print what is status of all players position 
             printPlayers(player);
+            printf("this is %d round\n",countRound);
         }
 
         playerNum%=4;
@@ -304,27 +317,27 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
 {
     // in this function only do move pieces and cut enmy pieces and go to mystrey cell
     Borad *borad;
-     pieces[4][4];
     Player *player = &player[*playerNum];
-    int currentPlayerPiecesPosition = player->pieces[piecesNum[0]].piecesPosition;
+    
 
     int enemyPlayer = 0;
 
     while (rollNum==0)
     {
-        int enemyPieces[3] = {0, 0, 0};
-        int allayPieces[3] = {0, 0, 0};
-        int piecesNum[3] = {0, 0, 0};
+        int enemyPieces[3] = {-1, -1, -1};
+        int allayPieces[3] = {-1, -1, -1};
+        int piecesNum[3] = {-1, -1,-1};
 
         // give picecs to X location from base
 
         if (*picesToHome == 1)
         {
             player->pieces[piecesNum[0]].piecesPosition = base;
-            player->pieces[piecesNum[0]].startgame == 1;
+            player->pieces[piecesNum[0]].startgame = 1;
             player->pieces[piecesNum[0]].piecesCaptured = 0;
             player->pieces[piecesNum[0]].pastHomeHowTimes = 0;
             player->pieces[piecesNum[0]].pastpiecesDirection = 0;
+            player->pieces[piecesNum[0]].pieceInHomeCell=0;
             howManyPiecesStart++;
 
             int directionOfPieces = coinTos();
@@ -347,7 +360,15 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
 
             int previousCurrentPiecesPosition = player->pieces[piecesNum[0]].piecesPosition;
             int newCurrentPiecesPosition = player->pieces[piecesNum[0]].piecesPosition + 1;
-            int previousPlayerpieces = sizeof(piecesNum) / sizeof(pieces[0]);
+            int assignedCount = 0;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (piecesNum[i] != -1)
+                {
+                    assignedCount++;
+                }
+            }
             int newPositionEnemyPlayerPieces = countEnemyPiecesAtPosition(newCurrentPiecesPosition, *playerNum, &enemyPlayer, &enemyPieces);
             int newPositionAllayPlayerPieces = countAllyPiecesAtPosition(newCurrentPiecesPosition, *playerNum, &allayPieces, &piecesNum[0]);
             if (piecesNum[1] > 0)
@@ -360,7 +381,7 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
             }
 
             // 0ne pieces
-            if (previousPlayerpieces == 0 &&sixTimesBlock==0)
+            if (assignedCount == 1 &&(sixTimesBlock==0 || sixTimesBlock==1))
             {
                 if (newPositionEnemyPlayerPieces == 1)
                 {
@@ -377,7 +398,7 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
                 }
 
-                if (*picesToHome == 2 && rollNum == 1 && newPositionAllayPlayerPieces == 0)
+                if ((*picesToHome==10 || *picesToHome == 2) && rollNum == 1 && newPositionAllayPlayerPieces == 1)
                 {
                     int cureentPiecesDirection = player->pieces[*piecesNum].piecesDirection;
                     int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
@@ -395,7 +416,7 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
                     pieces[*playerNum][allayPieces[0]] = player->pieces[piecesNum[0]].piecesPosition;
                 }
-                if (*picesToHome == 2 && rollNum == 1 && newPositionAllayPlayerPieces == 1)
+                if ((*picesToHome==10 || *picesToHome == 2) && rollNum == 1 && newPositionAllayPlayerPieces == 2)
                 {
                     int cureentPiecesDirection = player->pieces[piecesNum[0]].piecesDirection;
                     int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
@@ -415,14 +436,14 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     pieces[*playerNum][allayPieces[1]] = player->pieces[allayPieces[1]].piecesPosition;
                     pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
                 }
-                if (*picesToHome == 2 && rollNum == 1 && newPositionAllayPlayerPieces == 2)
+                if ((*picesToHome==10 || *picesToHome == 2) && rollNum == 1 && newPositionAllayPlayerPieces == 3)
                 {
                     printf("%c pieces %d go to %d but he can't go next position becacuse it block by allay block %d pieces , %d pieces and %d pieces\n", player->playercolor, piecesNum[0], previousCurrentPiecesPosition, allayPieces[0], allayPieces[1], allayPieces[2]);
                     rollNum = 0;
                     player->pieces[piecesNum[0]].piecesPosition--;
                     pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
                 }
-                if (*picesToHome == 5 && rollNum == 1 && newPositionEnemyPlayerPieces == 0)
+                if ((*picesToHome==10 || *picesToHome == 5) && rollNum == 1 && newPositionEnemyPlayerPieces == 0)
                 {
                     printf("%c pieces %d capture %c player %d pieces \n", player->playercolor, piecesNum[0], player[enemyPlayer].playercolor, enemyPieces[0]);
                     rollNum = 0;
@@ -430,10 +451,120 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     player->pieces[piecesNum[0]].piecesCaptured=1;
                     piecesCaptured(enemyPlayer, enemyPieces[0], 0, 0, player, borad);
                 }
+                if ((*picesToHome==10 || *picesToHome == 8) && rollNum==1 && borad[newCurrentPiecesPosition].mysteryCell==1)
+                {
+                    if (newPositionAllayPlayerPieces==0)
+                    {
+                        mystryCell(&player[*playerNum],borad,piecesNum[0],-1,-1,*playerNum);
+                        rollNum=0;
+                    }
+                    else if (newPositionEnemyPlayerPieces==1)
+                    {
+                        mystryCell(&player[*playerNum],borad,piecesNum[0],-1,-1,*playerNum);
+                        rollNum=0;
+                    }
+                    else
+                    {
+                    if (newPositionAllayPlayerPieces==1)
+                    {
+                         int cureentPiecesDirection = player->pieces[*piecesNum].piecesDirection;
+                    int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                    // block direction checker
+                    blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, 0, piecesNum[0], allayPieces);
+                    // print what happend
+                    printf("%c pieces %d go to %d make a block with %d pieces\n", player->playercolor, piecesNum[0], newCurrentPiecesPosition, allayPieces[0]);
+                    // handle for block for future use
+                    player->piecesBlock++;
+                    player->pieces[piecesNum[0]].piecesBlock = 1;
+                    player->pieces[allayPieces[0]].piecesBlock = 1;
+                    // end while loop
+                    rollNum = 0;
+                    // assing  new position to pieces
+                    pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
+                    pieces[*playerNum][allayPieces[0]] = player->pieces[piecesNum[0]].piecesPosition;
+                    }
+                    if (newPositionAllayPlayerPieces==2)
+                    {
+                        int cureentPiecesDirection = player->pieces[*piecesNum].piecesDirection;
+                    int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                    int newSecondDirection = player->pieces[allayPieces[1]].piecesDirection;
+                    blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, newSecondDirection, piecesNum[0], allayPieces);
+                    // handle for block for future use
+                    player->piecesBlock++;
+                    player->pieces[piecesNum[0]].piecesBlock = 2;
+                    }
+                    }
+                }
+
+                if (player->pieces[piecesNum[0]].piecesCaptured >= 1)
+                {
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == greenHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player pieces %d go to H%d\n", player->playercolor, piecesNum, player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == redHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[1];
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player pieces %d go to H%d\n", player->playercolor, piecesNum, player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == yellowHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player pieces %d go to H%d\n", player->playercolor, piecesNum, player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == blueHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[1];
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player pieces %d go to H%d\n", player->playercolor, piecesNum, player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                }
+                if (player->pieces[piecesNum[0]].pieceInHomeCell==1)
+                {
+                    int couter=0;
+                    for (int  i = 0; i <=5; i++)
+                    {
+
+                       if(player->pieces[piecesNum[0]].piecesPosition==HomeLabels[i])
+                       {
+                            couter=i+1;
+                            if ((couter+rollNum)==5)
+                            {
+                                player->pieces[piecesNum[0]].startgame=0;
+                                player[*playerNum].finishPieces=player[*playerNum].finishPieces+1;
+                                printf("%c player pieces %d go to home\n",player->playercolor,piecesNum[0]);
+                                rollNum=0;
+                            }
+                            if ((couter+rollNum)<5)
+                            {
+                                player->pieces[piecesNum[0]].piecesPosition=HomeLabels[i+rollNum];
+                                printf("%c player pieces %d go to H%d\n",player->playercolor,piecesNum[0],player->pieces[piecesNum[0]].piecesPosition);
+                                rollNum=0;
+
+                            }
+                            if ((couter+rollNum)>5)
+                            {
+                                printf("%c player pieces %d can't move in home cells\n",player->playercolor,piecesNum[0]);
+                                rollNum=0;
+                            }  
+                       }
+                    }
+                    
+                }
+                
+                
                 // mystry case
             }
             // one BLOCK
-            if (previousPlayerpieces == 1)
+            if (assignedCount == 2)
             {
 
                 if (newPositionEnemyPlayerPieces == 2)
@@ -500,10 +631,83 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     //captured  block go back to base
                     piecesCaptured(enemyPlayer, enemyPieces[0], enemyPieces[1], 0, player, borad);
                 }
+                               if (player->pieces[piecesNum[0]].piecesCaptured >= 1 || player->pieces[piecesNum[1]].piecesCaptured >= 1)
+
+                {
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == greenHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d) go to H%d\n", player->playercolor, piecesNum[0],pieces[1], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == redHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d) go to H%d\n", player->playercolor, piecesNum[0],pieces[1], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == yellowHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d) go to H%d\n", player->playercolor, piecesNum[0],pieces[1], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == blueHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d) go to H%d\n", player->playercolor, piecesNum[0],pieces[1], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                }
+                if (player->pieces[piecesNum[0]].pieceInHomeCell == 1)
+                {
+                    int couter = 0;
+                    for (int i = 0; i <= 5; i++)
+                    {
+
+                        if (player->pieces[piecesNum[0]].piecesPosition == HomeLabels[i])
+                        {
+                            couter = i + 1;
+                            if ((couter + rollNum) == 5)
+                            {
+
+                                player->pieces[piecesNum[0]].startgame = 0;
+                                player->pieces[piecesNum[1]].startgame = 0;
+                                player[*playerNum].finishPieces = player[*playerNum].finishPieces + 2;
+                                printf("%c player block->(%d&%d) go to home\n", player->playercolor, piecesNum[0], piecesNum[1]);
+                                rollNum = 0;
+                            }
+                            if ((couter + rollNum) < 5)
+                            {
+                                player->pieces[piecesNum[0]].piecesPosition = HomeLabels[i + rollNum];
+                                player->pieces[piecesNum[1]].piecesPosition = HomeLabels[i + rollNum];
+                                printf("%c player block->(%d&%d) go to H%d\n", player->playercolor, piecesNum[0], piecesNum[1], player->pieces[piecesNum[0]].piecesPosition);
+                                rollNum = 0;
+                            }
+                            if ((couter + rollNum) > 5)
+                            {
+                                printf("%c player block->(%d&%d)can't move in home cells\n", player->playercolor, piecesNum[0], piecesNum[1]);
+                                rollNum = 0;
+                            }
+                        }
+                    }
+                }
                 //mestry cell
             }
             //super block
-            if(previousPlayerpieces==2)
+            if(assignedCount==3)
             {
                 if (newPositionEnemyPlayerPieces == 2 && rollNum!=1)
                 {
@@ -534,7 +738,7 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                 }
                 if (*picesToHome == 7 && rollNum == 1 && newPositionEnemyPlayerPieces == 1)
                 {
-                    printf("%c player Block->(%d & %d & %d) capture %c player %d pieces and %d pieces \n", player->playercolor, piecesNum[0], piecesNum[1],piecesNum[2], player[enemyPlayer].playercolor, enemyPieces[0], enemyPieces[1]);
+                    printf("%c player Block->(%d & %d & %d) capture %c player %d pieces and %d pieces \n", player->playercolor, piecesNum[0], piecesNum[1], piecesNum[2], player[enemyPlayer].playercolor, enemyPieces[0], enemyPieces[1]);
                     rollNum == 0;
                     pieces[*playerNum][piecesNum[0]] = player->pieces[piecesNum[0]].piecesPosition;
                     pieces[*playerNum][piecesNum[1]] = player->pieces[piecesNum[1]].piecesPosition;
@@ -561,80 +765,90 @@ void playermove(int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,
                     // captured  block go back to base
                     piecesCaptured(enemyPlayer, enemyPieces[0], enemyPieces[1], enemyPieces[2], player, borad);
                 }
-                //mystry cell
-            }
-            // 0ne pieces
-            if (previousPlayerpieces == 0 && sixTimesBlock == 1)
-            {
-                if (newPositionEnemyPlayerPieces == 1)
-                {
-                    printf("%c pieces %d go to %d but he can't go next position becacuse it block by enemy %c player block->(%d pieces and %d pieces)\n", player->playercolor, *piecesNum, previousCurrentPiecesPosition, enemyPieces[0], player[enemyPlayer].playercolor, enemyPieces[1]);
-                    rollNum = 0;
-                    player->pieces[*piecesNum].piecesPosition--;
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
-                }
-                if (newPositionEnemyPlayerPieces == 2)
-                {
-                    printf("%c pieces %d go to %d but he can't go next position becacuse it block by enemy %c player block->(%d pieces and %d pieces and %d pieces)\n", player->playercolor, *piecesNum, previousCurrentPiecesPosition, player[enemyPlayer].playercolor, enemyPieces[0], enemyPieces[1], enemyPieces[2]);
-                    rollNum = 0;
-                    player->pieces[*piecesNum].piecesPosition--;
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
-                }
+                if (player->pieces[piecesNum[0]].piecesCaptured >= 1 || player->pieces[piecesNum[1]].piecesCaptured >= 1 || player->pieces[piecesNum[2]].piecesCaptured >= 1)
 
-                if ( rollNum == 1 && newPositionAllayPlayerPieces == 0)
                 {
-                    int cureentPiecesDirection = player->pieces[*piecesNum].piecesDirection;
-                    int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
-                    // block direction checker
-                    blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, 0, *piecesNum, allayPieces);
-                    // print what happend
-                    printf("%c pieces %d go to %d make a block with %d pieces\n", player->playercolor, *piecesNum, newCurrentPiecesPosition, allayPieces[0]);
-                    // handle for block for future use
-                    player->piecesBlock++;
-                    player->pieces[*piecesNum].piecesBlock = 1;
-                    player->pieces[allayPieces[0]].piecesBlock = 1;
-                    // end while loop
-                    rollNum = 0;
-                    // assing  new position to pieces
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
-                    pieces[*playerNum][allayPieces[0]] = player->pieces[*piecesNum].piecesPosition;
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == greenHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[2]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[2]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d&%d) go to H%d\n", player->playercolor, piecesNum[0], pieces[1], piecesNum[2], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == redHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[2]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[2]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d&%d) go to H%d\n", player->playercolor, piecesNum[0], pieces[1], piecesNum[2], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'G' && player->pieces[piecesNum[0]].piecesPosition == yellowHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[2]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[2]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d&%d) go to H%d\n", player->playercolor, piecesNum[0], pieces[1], piecesNum[2], player->pieces[piecesNum[0]].piecesPosition);
+                    }
+                    if (player->playercolor == 'R' && player->pieces[piecesNum[0]].piecesPosition == blueHome)
+                    {
+                        player->pieces[piecesNum[0]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[2]].piecesPosition = HomeLabels[0];
+                        player->pieces[piecesNum[1]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[0]].pieceInHomeCell = 1;
+                        player->pieces[piecesNum[2]].pieceInHomeCell = 1;
+                        rollNum--;
+                        printf("%c player block-> (%d&%d&%d) go to H%d\n", player->playercolor, piecesNum[0], pieces[1], piecesNum[2], player->pieces[piecesNum[0]].piecesPosition);
+                    }
                 }
-                if (rollNum == 1 && newPositionAllayPlayerPieces == 1)
+                if (player->pieces[piecesNum[0]].pieceInHomeCell == 1)
                 {
-                    int cureentPiecesDirection = player->pieces[*piecesNum].piecesDirection;
-                    int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
-                    int newSecondDirection = player->pieces[allayPieces[1]].piecesDirection;
-                    blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, newSecondDirection, *piecesNum, allayPieces);
-                    // handle for block for future use
-                    player->piecesBlock++;
-                    player->pieces[*piecesNum].piecesBlock = 2;
-                    player->pieces[allayPieces[0]].piecesBlock = 2;
-                    player->pieces[allayPieces[1]].piecesBlock = 2;
-                    // print what happend
-                    printf("%c pieces %d go to %d make a super bolck with %d pieces and %d pieces\n", player->playercolor, *piecesNum, newCurrentPiecesPosition, allayPieces[0], allayPieces[1]);
-                    // end while loop
-                    rollNum = 0;
-                    // assing  new position to pieces
-                    pieces[*playerNum][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
-                    pieces[*playerNum][allayPieces[1]] = player->pieces[allayPieces[1]].piecesPosition;
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
+                    int couter = 0;
+                    for (int i = 0; i <= 5; i++)
+                    {
+
+                        if (player->pieces[piecesNum[0]].piecesPosition == HomeLabels[i])
+                        {
+                            couter = i + 1;
+                            if ((couter + rollNum) == 5)
+                            {
+
+                                player->pieces[piecesNum[0]].startgame = 0;
+                                player->pieces[piecesNum[1]].startgame = 0;
+                                player->pieces[piecesNum[2]].startgame = 0;
+
+                                player[*playerNum].finishPieces = player[*playerNum].finishPieces + 3;
+                                printf("%c player block->(%d&%d&%d) go to home\n", player->playercolor, piecesNum[0], piecesNum[1], piecesNum[2]);
+                                rollNum = 0;
+                            }
+                            if ((couter + rollNum) < 5)
+                            {
+                                player->pieces[piecesNum[0]].piecesPosition = HomeLabels[i + rollNum];
+                                player->pieces[piecesNum[1]].piecesPosition = HomeLabels[i + rollNum];
+                                player->pieces[piecesNum[2]].piecesPosition = HomeLabels[i + rollNum];
+                                printf("%c player block->(%d&%d&%d) go to H%d\n", player->playercolor, piecesNum[0], piecesNum[1], piecesNum[2], player->pieces[piecesNum[0]].piecesPosition);
+                                rollNum = 0;
+                            }
+                            if ((couter + rollNum) > 5)
+                            {
+                                printf("%c player block->(%d&%d&%d)can't move in home cells\n", player->playercolor, piecesNum[0], piecesNum[1], piecesNum[2]);
+                                rollNum = 0;
+                            }
+                        }
+                    }
                 }
-                if ( rollNum == 1 && newPositionAllayPlayerPieces == 2)
-                {
-                    printf("%c pieces %d go to %d but he can't go next position becacuse it block by allay block %d pieces , %d pieces and %d pieces\n", player->playercolor, *piecesNum, previousCurrentPiecesPosition, allayPieces[0], allayPieces[1], allayPieces[2]);
-                    rollNum = 0;
-                    player->pieces[*piecesNum].piecesPosition--;
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
-                }
-                if (rollNum == 1 && newPositionEnemyPlayerPieces == 0)
-                {
-                    printf("%c pieces %d capture %c player %d pieces \n", player->playercolor, *piecesNum, player[enemyPlayer].playercolor, enemyPieces[0]);
-                    rollNum = 0;
-                    pieces[*playerNum][*piecesNum] = player->pieces[*piecesNum].piecesPosition;
-                    player->pieces[*piecesNum].piecesCaptured = 1;
-                    piecesCaptured(enemyPlayer, enemyPieces[0], 0, 0, player, borad);
-                }
-                // mystry case
             }
         }
     }
@@ -652,17 +866,17 @@ int countEnemyPiecesAtPosition(int position, int currentPlayer, int *enemyIndex,
             if (pieces[i][j] == position && currentPlayer != i)
             {
                 *enemyIndex = i; // If a different player is found, set the enemy index
-                if (*enemyPieces[0] == 0)
+                if (*enemyPieces[0] == -1)
                 {
                     *enemyPieces[0] = j;
                     count++;
                 }
-                else if (*enemyPieces[1] == 0 && *enemyPieces[0] > 0)
+                else if (*enemyPieces[1] == -1 && *enemyPieces[0] > -1)
                 {
                     *enemyPieces[1] = j;
                     count++;
                 }
-                else if (*enemyPieces[2] && *enemyPieces[1] > 0 && *enemyPieces[0] > 0)
+                else if (*enemyPieces[2]==-1 && *enemyPieces[1] > -1 && *enemyPieces[0] > -1)
                 {
                     *enemyPieces[2] = j;
                     count++;
@@ -690,17 +904,17 @@ int countAllyPiecesAtPosition(int position, int currentPlayer, int (*allayPieces
         {
             if (pieces[i][j] == position && i == currentPlayer)
             {
-                if (allayPieces[0] == 0 && j != *piecesNum)
+                if (*allayPieces[0] == -1 && j != *piecesNum)
                 {
                     *allayPieces[0] = j;
                     count++;
                 }
-                else if (allayPieces[0] > 0 && allayPieces[1] == 0 && j != *piecesNum)
+                else if (*allayPieces[0] > -1 && *allayPieces[1] == -1 && j != *piecesNum)
                 {
                     *allayPieces[1] = j;
                     count++;
                 }
-                else if (allayPieces[1] > 0 && allayPieces[2] == 0 && allayPieces[0] > 0 && j != *piecesNum)
+                else if (*allayPieces[1] > -1 && *allayPieces[2] == -1 && *allayPieces[0] > 0 && j != *piecesNum)
 
                 {
                     *allayPieces[2] = j;
@@ -764,7 +978,7 @@ void blockDirectionChecker(Player *player, Borad *borad, int cureentPiecesDirect
 void piecesCaptured(int enemyPlayer, int firstpieces, int secondpieces, int thirdpieces, Player *player, Borad *borad)
 {
     player = &player[enemyPlayer];
-    if (firstpieces > 0 && secondpieces == 0 && thirdpieces == 0)
+    if (firstpieces > -1 && secondpieces == -1 && thirdpieces == -1)
     {
         player->pieces[firstpieces].pastHomeHowTimes = 0;
         player->pieces[firstpieces].pastpiecesDirection = 0;
@@ -774,7 +988,7 @@ void piecesCaptured(int enemyPlayer, int firstpieces, int secondpieces, int thir
         player->pieces[firstpieces].startgame = -1;
         pieces[enemyPlayer][firstpieces]=base;
     }
-    if (firstpieces > 0 && secondpieces > 0 && thirdpieces == 0)
+    if (firstpieces > -1 && secondpieces > -1 && thirdpieces == -1)
     { // first player go to base
         player->pieces[firstpieces].pastHomeHowTimes = 0;
         player->pieces[firstpieces].pastpiecesDirection = 0;
@@ -798,7 +1012,7 @@ void piecesCaptured(int enemyPlayer, int firstpieces, int secondpieces, int thir
         player->piecesBlock--;
         borad->piecesBlock = 0;
     }
-    if (firstpieces > 0 && secondpieces > 0 && thirdpieces > 0)
+    if (firstpieces > -1 && secondpieces > -1 && thirdpieces > -1)
     { // first pieces go to base
         player->pieces[firstpieces].pastHomeHowTimes = 0;
         player->pieces[firstpieces].pastpiecesDirection = 0;
@@ -837,13 +1051,13 @@ void piecesCaptured(int enemyPlayer, int firstpieces, int secondpieces, int thir
 void blockBreaker(Player *player,Borad *borad,int allayplayer,int pieces1,int pieces2,int pieces3)
 {
     player=&player[allayplayer];
-    if(pieces1>0&&pieces2==0&&pieces3==0)
+    if(pieces1>-1&&pieces2==-1&&pieces3==-1)
     {
         player->pieces[pieces1].piecesDirection=player->pieces[pieces1].pastpiecesDirection;
         player->pieces[pieces1].pastpiecesDirection=0;
         player->pieces[pieces1].piecesBlock=0;
     }
-    if (pieces1>0 &&pieces2>0&&pieces3==0)
+    if (pieces1>-1 &&pieces2>-1&&pieces3==-1)
     {   //reset block to two pieces
         //first pieces
         player->pieces[pieces1].piecesDirection=player->pieces[pieces1].pastpiecesDirection;
@@ -854,7 +1068,7 @@ void blockBreaker(Player *player,Borad *borad,int allayplayer,int pieces1,int pi
         player->pieces[pieces2].pastpiecesDirection=0;
         player->pieces[pieces2].piecesBlock=0;        
     }
-    if (pieces1>0 && pieces2>0 &&pieces3>0)
+    if (pieces1>-1 && pieces2>-1 &&pieces3>-1)
     {
         //reset block to three pieces
         //first pieces
@@ -871,112 +1085,258 @@ void blockBreaker(Player *player,Borad *borad,int allayplayer,int pieces1,int pi
         player->pieces[pieces3].piecesBlock=0;                 
     }
 }
-//call player depend on player number
-/*
+void mystryCell(Player *player, Borad *borad, int firstPiece, int secondPiece, int thirdPiece, int cureentplayer)
+{
+    int mystryCellBeheviros = (rand() % 6) + 1;
+    int allayPieces[3] = {-1, -1, -1};
+    int enemyPieces[3] = {-1, -1, -1};
+    int enemyPlayer = 0;
+    if ((firstPiece>0 &&secondPiece>0 && thirdPiece==0) || (firstPiece>0 && secondPiece>0 && thirdPiece>0) )
+    {
+      printf("can't teleport any block to mystyer cell\n");
+    }
+    
+    if (firstPiece > 0 && secondPiece == 0 && thirdPiece == 0)
+    {
+
+        if (mystryCellBeheviros == 1)
+        {
+            int newPositionEnemyPlayerPieces = countEnemyPiecesAtPosition(bawanaCell, firstPiece, &enemyPlayer, &enemyPieces);
+            int newPositionAllayPlayerPieces = countAllyPiecesAtPosition(bawanaCell, cureentplayer, &allayPieces, &firstPiece);
+            if (newPositionAllayPlayerPieces == 1)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                // block direction checker
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, 0, firstPiece, allayPieces);
+                // print what happend
+                printf("%c pieces %d teleport to bawana cell->(%d) make a block with %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, bawanaCell, allayPieces[0]);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 1;
+                player->pieces[allayPieces[0]].piecesBlock = 1;
+                player->pieces[firstPiece].piecesPosition = bawanaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 2)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                int newSecondDirection = player->pieces[allayPieces[1]].piecesDirection;
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, newSecondDirection, firstPiece, allayPieces);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 2;
+                player->pieces[allayPieces[0]].piecesBlock = 2;
+                player->pieces[allayPieces[1]].piecesBlock = 2;
+                // print what happend
+                printf("%c pieces %d teleport to bawana cell->(%d) make a super bolck with %d pieces and %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, bawanaCell, allayPieces[0], allayPieces[1]);
+                // assing  new position to pieces
+                player->pieces[firstPiece].piecesPosition = bawanaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][allayPieces[1]] = player->pieces[allayPieces[1]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 3)
+            {
+                printf("%c pieces can't teleport bawana cell->(%d) allay block %d pieces , %d pieces and %d pieces\n", player->playercolor, firstPiece, bawanaCell, allayPieces[0], allayPieces[1], allayPieces[2]);
+            }
+            if (newPositionEnemyPlayerPieces == 0)
+            {
+                printf("%c pieces %d teleport to bawana Cell->(%d) capture %c player %d pieces so that teleport piece not efficted anything\n", player->playercolor, firstPiece, bawanaCell, player[enemyPlayer].playercolor, enemyPieces[0]);
+                player->pieces[firstPiece].piecesPosition = bawanaCell;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+                player->pieces[firstPiece].piecesCaptured = 1;
+                piecesCaptured(enemyPlayer, enemyPieces[0], 0, 0, player, borad);
+            }
+            if (newPositionEnemyPlayerPieces > 0)
+            {
+                printf("%c player %d piece can't move to bawana cell->(%d) because it block by enemy block\n", player->playercolor, firstPiece, bawanaCell);
+            }
+            if (newPositionAllayPlayerPieces == 0)
+            {
+
+                player->pieces[firstPiece].mysteryCell = 1;
+                int bawanaBeheviours = (rand() % 2) + 1;
+                if (bawanaBeheviours == 1)
+                {
+                    player->pieces[firstPiece].movementModifier = 2;
+                    player->pieces[firstPiece].mystryCellTurns = 4;
+                    printf("now %c player %d pieces is energized for next four rounds\n", player->playercolor, firstPiece);
+                }
+                else
+                {
+                    player->pieces[firstPiece].movementModifier = 0.5;
+                    player->pieces[firstPiece].mystryCellTurns = 4;
+                    printf("now %c player %d pieces is sick for next four rounds\n", player->playercolor, firstPiece);
+                }
+            }
+        }
+                if (mystryCellBeheviros==2)
+        {
+             int newPositionEnemyPlayerPieces = countEnemyPiecesAtPosition(PitaKotuwaCell, firstPiece, &enemyPlayer, &enemyPieces);
+            int newPositionAllayPlayerPieces = countAllyPiecesAtPosition(PitaKotuwaCell, cureentplayer, &allayPieces, &firstPiece);
+            if (newPositionAllayPlayerPieces == 1)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                // block direction checker
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, 0, firstPiece, allayPieces);
+                // print what happend
+                printf("%c pieces %d teleport to pita Kotuwa cell->(%d) make a block with %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, PitaKotuwaCell, allayPieces[0]);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 1;
+                player->pieces[allayPieces[0]].piecesBlock = 1;
+                player->pieces[firstPiece].piecesPosition =PitaKotuwaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 2)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                int newSecondDirection = player->pieces[allayPieces[1]].piecesDirection;
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, newSecondDirection, firstPiece, allayPieces);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 2;
+                player->pieces[allayPieces[0]].piecesBlock = 2;
+                player->pieces[allayPieces[1]].piecesBlock = 2;
+                // print what happend
+                printf("%c pieces %d teleport to PitaKotuwa cell->(%d) make a super bolck with %d pieces and %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, PitaKotuwaCell, allayPieces[0], allayPieces[1]);
+                // assing  new position to pieces
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][allayPieces[1]] = player->pieces[allayPieces[1]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 3)
+            {
+                printf("%c pieces can't teleport PitaKotuwa cell->(%d) allay block %d pieces , %d pieces and %d pieces\n", player->playercolor, firstPiece, PitaKotuwaCell, allayPieces[0], allayPieces[1], allayPieces[2]);
+            }
+            if (newPositionEnemyPlayerPieces == 0)
+            {
+                printf("%c pieces %d teleport to PitaKotuwa Cell->(%d) capture %c player %d pieces so that teleport piece not efficted anything\n", player->playercolor, firstPiece, PitaKotuwaCell, player[enemyPlayer].playercolor, enemyPieces[0]);
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+                player->pieces[firstPiece].piecesCaptured = 1;
+                piecesCaptured(enemyPlayer, enemyPieces[0], 0, 0, player, borad);
+            }
+            if (newPositionEnemyPlayerPieces > 0)
+            {
+                printf("%c player %d piece can't move to PitaKotuwa cell->(%d) because it block by enemy block\n", player->playercolor, firstPiece,PitaKotuwaCell);
+            }
+            if (newPositionAllayPlayerPieces==0)
+            {
+                if(player->pieces[firstPiece].piecesDirection==1)
+                {
+                    player->pieces[firstPiece].piecesDirection==2;
+                    printf("%c player %d pieces teleport to pitakottuwa cell->(%d) and that teleport pieces change direction to clockwise to anticlockwise\n",player->playercolor,firstPiece,PitaKotuwaCell);
+                
+                }else
+                {
+                    mystryCellBeheviros=3;
+                    printf("%c player %d pieces teleport to pitakottuwa cell->(%d) and that teleport cell teleport to kottuwa cell->(%d)",player->playercolor,firstPiece,PitaKotuwaCell,KotuwaCell);
+                }
+            }
+            
+            
+        }
+        if (mystryCellBeheviros == 3)
+        {
+            int newPositionEnemyPlayerPieces = countEnemyPiecesAtPosition(KotuwaCell, firstPiece, &enemyPlayer, &enemyPieces);
+            int newPositionAllayPlayerPieces = countAllyPiecesAtPosition(KotuwaCell, cureentplayer,&allayPieces, &firstPiece);
+            if (newPositionAllayPlayerPieces == 1)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                // block direction checker
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, 0, firstPiece, allayPieces);
+                // print what happend
+                printf("%c pieces %d teleport to Kotuwa cell->(%d) make a block with %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, KotuwaCell, allayPieces[0]);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 1;
+                player->pieces[allayPieces[0]].piecesBlock = 1;
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 2)
+            {
+                int cureentPiecesDirection = player->pieces[firstPiece].piecesDirection;
+                int newPiecesDirection = player->pieces[allayPieces[0]].piecesDirection;
+                int newSecondDirection = player->pieces[allayPieces[1]].piecesDirection;
+                blockDirectionChecker(player, borad, cureentPiecesDirection, newPiecesDirection, newSecondDirection, firstPiece, allayPieces);
+                // handle for block for future use
+                player->piecesBlock++;
+                player->pieces[firstPiece].piecesBlock = 2;
+                player->pieces[allayPieces[0]].piecesBlock = 2;
+                player->pieces[allayPieces[1]].piecesBlock = 2;
+                // print what happend
+                printf("%c pieces %d teleport to Kotuwa cell->(%d) make a super bolck with %d pieces and %d pieces and that teleport pieces not efficted anything\n", player->playercolor, firstPiece, KotuwaCell, allayPieces[0], allayPieces[1]);
+                // assing  new position to pieces
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                pieces[cureentplayer][allayPieces[0]] = player->pieces[allayPieces[0]].piecesPosition;
+                pieces[cureentplayer][allayPieces[1]] = player->pieces[allayPieces[1]].piecesPosition;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+            }
+            if (newPositionAllayPlayerPieces == 3)
+            {
+                printf("%c pieces can't teleport Kotuwa cell->(%d) allay block %d pieces , %d pieces and %d pieces\n", player->playercolor, firstPiece, KotuwaCell, allayPieces[0], allayPieces[1], allayPieces[2]);
+            }
+            if (newPositionEnemyPlayerPieces == 0)
+            {
+                printf("%c pieces %d teleport to Kotuwa Cell->(%d) capture %c player %d pieces so that teleport piece not efficted anything\n", player->playercolor, firstPiece, KotuwaCell, player[enemyPlayer].playercolor, enemyPieces[0]);
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                pieces[cureentplayer][firstPiece] = player->pieces[firstPiece].piecesPosition;
+                player->pieces[firstPiece].piecesCaptured = 1;
+                piecesCaptured(enemyPlayer, enemyPieces[0], 0, 0, player, borad);
+            }
+            if (newPositionEnemyPlayerPieces > 0)
+            {
+                printf("%c player %d piece can't move to Kotuwa cell->(%d) because it block by enemy block\n", player->playercolor, firstPiece, KotuwaCell);
+            }
+            if (newPositionAllayPlayerPieces == 0)
+            {
+                player->pieces[firstPiece].piecesPosition = KotuwaCell;
+                player->pieces[firstPiece].mystryCellTurns = 4;
+                player->pieces[firstPiece].turnSkkiped = 1;
+                printf("Next four rounds will be skipped for player %c pieces %d\n", player->playercolor, firstPiece);
+            }
+        }
+    }
+}
 void playerCall(Player *player,Borad *borad,int playerNum,int*piecesToHome,int rollNum,int (*piecesNum[3]))
 {
-    if (player[playerNum].playercolor=='G')
+if (player[playerNum].playercolor=='G')
     {
-        greenplayer(&player[playerNum],&borad,rollNum,&(*piecesToHome),&(*piecesNum[2]));
+        greenplayer(&player[playerNum],borad,playerNum,rollNum,&(*piecesToHome),piecesNum);
     }
-    if (player[playerNum].playercolor=='R')
+if (player[playerNum].playercolor=='R')
     {
-        redplayer(&player[playerNum],&borad,rollNum,&(*piecesToHome),&(*piecesNum[2]));
-    }
-    if (player[playerNum].playercolor=='B')
-    {
-        blueplayer(&player[playerNum],&borad,rollNum,&(*piecesToHome),&(*piecesNum[2]));
+        redplayer(&player[playerNum],borad,playerNum,rollNum,&(*piecesToHome),piecesNum);
     }
     if (player[playerNum].playercolor=='Y')
     {
-        yellowplayer(&player[playerNum],&borad,rollNum,&(*piecesToHome),&(*piecesNum[2]));
-    }   
-}*/
-void mystryCell(Player *player, Borad *borad,int firstPiece,int secondPiece,int thirdPiece,int *movementModifier,int *trunSkipper,int pieces[numPlayers][4])
-{
-    int mystryCellBeheviros=(rand()%6)+1;
-    int allayPieces[3]={0,0,0};
-    if (firstPiece>0 && secondPiece==0 && thirdPiece==0)
+        yellowplayer(&player[playerNum],borad,playerNum,rollNum,&(*piecesToHome),piecesNum);
+    }
+if (player[playerNum].playercolor=='B')
     {
-        if (mystryCellBeheviros==1)
-        {
-            int bawanaBeheviours=(rand()%2)+1;
-            if (bawanaBeheviours==1)
-            {
-                *movementModifier = 2;     
-            }else
-            {
-                *movementModifier =0.5;
-            }
-            
-        }if (mystryCellBeheviros==2)
-        {
-            *trunSkipper=4;
-            player->pieces[firstPiece].piecesPosition=KotuwaCell;
-            printf("Next four turn will be skipped for player %c pieces %d\n",player->playercolor,firstPiece);
-        }
-        if (mystryCellBeheviros==3)
-        {
-            
-        }
-        
-        
-    }
-    
-
-}
-
-void handleMysteryCell(int *position, int *direction, int *turnsSkipped, int *movementModifier,Player *player,int firstPiece,int secondPiece,int thirdPiece) 
-{
-    // Randomly select one of the six options
-    srand(time(0));
-    int randomChoice = rand() % 6;
-
-    switch(randomChoice) {
-        case 0: // Bhawana
-            *position = bawanaCell;
-            // Randomly determine if the piece is energized or sick
-            if (rand() % 2 == 0) {
-                *movementModifier = 2; // Energized, movement doubled
-                printf("now %c player %d pieces is energized\n",player->playercolor,firstPiece);
-            } else {
-                *movementModifier = 0.5; // Sick, movement halved
-                printf("now %c player %d pieces is sick\n",player->playercolor,firstPiece);
-            }
-            break;
-        case 1: // Kotuwa
-            *position = KotuwaCell;
-            *turnsSkipped = 4; // Skip 4 turns
-            printf("now %c player %d pieces is Kotuwa so he skkiped 4 turn\n",player->playercolor,firstPiece);
-            break;
-        case 2: // Pita-Kotuwa
-            *position =PitaKotuwaCell;
-            if (*direction == 1) {
-                *direction = -1; // Change direction to counterclockwise
-            } else {
-                *position = KotuwaCell; // Teleport to Kotuwa
-                *turnsSkipped = 4;
-            }
-            break;
-        case 3: // Base
-            *position = 0; // Assuming 0 is the base position
-            break;
-        case 4: // X of the piece color
-            // You need to define X based on the piece color
-            // This is just a placeholder
-            *position = 15; // Example position for X
-            break;
-        case 5: // Approach of the piece color
-            // You need to define the approach cell based on the piece color
-            // This is just a placeholder
-            *position = 5; // Example position for Approach
-            break;
+        blueplayer(&player[playerNum],borad,playerNum,rollNum,&(*piecesToHome),piecesNum);
     }
 }
-/*
-void greenplayer(Player *player, Borad *borad, int rollNum, int *piecesToHome, int *piecesNum)
+
+void greenplayer(Player *player, Borad *borad, int playerNum, int rollNum, int *piecesToHome, int (*piecesNum[3]))
 
 {
+    int allayPieces[3] = {-1, -1, -1};
+    int allayPieces1[3] = {-1, -1, -1};
+    int enemyPieces[3] = {-1, -1, -1};
+    int enemyPlayer = 0;
+    int num=-1;
 
     if (rollNum == 6)
     {
@@ -985,13 +1345,579 @@ void greenplayer(Player *player, Borad *borad, int rollNum, int *piecesToHome, i
             if (player->pieces[i].piecesPosition == base) // not home in base
 
             {
-                piecesNum = i;
+                *piecesNum[0] = i;
                 *piecesToHome = 1;
             }
         }
     }
-}*/
-void playerCall(Player *player,Borad *borad,int playerNum,int*piecesToHome,int rollNum,int (*piecesNum[3]))
+    for (int i = 0; i < 4; i++)
+    {
+        if (player->pieces[i].piecesDirection == 1)
+        {
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (i != j && player->pieces[i].piecesPosition + rollNum == player->pieces[j].piecesPosition)
+                {
+                    int position = player->pieces[i].piecesPosition;
+
+                    int currentPiecesPosition = countAllyPiecesAtPosition(position, playerNum, &allayPieces, &i);
+                    if (currentPiecesPosition == 1)
+                    {
+                        *piecesToHome = 2;
+                        *piecesNum[0] = i;
+                    }
+                    if (currentPiecesPosition == 2)
+                    {
+                        *piecesToHome = 3;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                    }
+                }
+                int newPosition = player->pieces[i].piecesPosition + rollNum;
+                int newPosition1 = player->pieces[i].piecesPosition + (rollNum / 2);
+                int newPosition2 = player->pieces[i].piecesPosition + (rollNum / 3);
+                int prePosition = player->pieces[i].piecesPosition;
+                int enemyPiecesPosition = countEnemyPiecesAtPosition(newPosition, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition1 = countEnemyPiecesAtPosition(newPosition1, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition2 = countEnemyPiecesAtPosition(newPosition2, playerNum, &enemyPlayer, &enemyPieces);
+                int currentPiecesPosition = countAllyPiecesAtPosition(prePosition, playerNum, &allayPieces, &i);
+                // capture area
+                if (enemyPiecesPosition == 1)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 1:
+                        *piecesToHome = 5;
+                        *piecesNum[0] = i;
+                        break;
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 2)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 3)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // mystry cell
+                if (borad[newPosition].mysteryCell == 1 && currentPiecesPosition == 1)
+                {
+                    *piecesNum[0] = i;
+                    *piecesToHome = 8;
+                }
+                //block breaker
+                int currentPiecesPosition1 = countAllyPiecesAtPosition(newPosition1, playerNum, &allayPieces1,&num);
+                if (currentPiecesPosition1==2)
+                {
+                    if (currentPiecesPosition==2)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+
+                    }
+                    
+                }
+                if (currentPiecesPosition==2)
+                {
+                    if (enemyPiecesPosition1==3)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+                    }
+                    
+                }
+
+                
+            }
+        }
+    }
+}
+void yellowplayer(Player *player, Borad *borad, int playerNum, int rollNum, int *piecesToHome, int (*piecesNum[3]))
+
 {
-    
+    int allayPieces[3] = {-1, -1, -1};
+    int allayPieces1[3] = {-1, -1, -1};
+    int enemyPieces[3] = {-1, -1, -1};
+    int enemyPlayer = 0;
+    int num=-1;
+
+    if (rollNum == 6)
+    {
+        for (int i = 0; i < numPlayers; i++)
+        {
+            if (player->pieces[i].piecesPosition == base) // not home in base
+
+            {
+                *piecesNum[0] = i;
+                *piecesToHome = 1;
+            }
+        }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        if (player->pieces[i].piecesDirection == 1)
+        {
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (i != j && player->pieces[i].piecesPosition + rollNum == player->pieces[j].piecesPosition)
+                {
+                    int position = player->pieces[i].piecesPosition;
+
+                    int currentPiecesPosition = countAllyPiecesAtPosition(position, playerNum, &allayPieces, &i);
+                    if (currentPiecesPosition == 1)
+                    {
+                        *piecesToHome = 2;
+                        *piecesNum[0] = i;
+                    }
+                    if (currentPiecesPosition == 2)
+                    {
+                        *piecesToHome = 3;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                    }
+                }
+                int newPosition = player->pieces[i].piecesPosition + rollNum;
+                int newPosition1 = player->pieces[i].piecesPosition + (rollNum / 2);
+                int newPosition2 = player->pieces[i].piecesPosition + (rollNum / 3);
+                int prePosition = player->pieces[i].piecesPosition;
+                int enemyPiecesPosition = countEnemyPiecesAtPosition(newPosition, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition1 = countEnemyPiecesAtPosition(newPosition1, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition2 = countEnemyPiecesAtPosition(newPosition2, playerNum, &enemyPlayer, &enemyPieces);
+                int currentPiecesPosition = countAllyPiecesAtPosition(prePosition, playerNum, &allayPieces, &i);
+                // capture area
+                if (enemyPiecesPosition == 1)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 1:
+                        *piecesToHome = 5;
+                        *piecesNum[0] = i;
+                        break;
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 2)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 3)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // mystry cell
+                if (borad[newPosition].mysteryCell == 1 && currentPiecesPosition == 1)
+                {
+                    *piecesNum[0] = i;
+                    *piecesToHome = 8;
+                }
+                //block breaker
+                int currentPiecesPosition1 = countAllyPiecesAtPosition(newPosition1, playerNum, &allayPieces1,&num);
+                if (currentPiecesPosition1==2)
+                {
+                    if (currentPiecesPosition==2)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+
+                    }
+                    
+                }
+                if (currentPiecesPosition==2)
+                {
+                    if (enemyPiecesPosition1==3)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+                    }
+                    
+                }
+
+                
+            }
+        }
+    }
+}
+void redplayer(Player *player, Borad *borad, int playerNum, int rollNum, int *piecesToHome, int (*piecesNum[3]))
+
+{
+    int allayPieces[3] = {-1, -1, -1};
+    int allayPieces1[3] = {-1, -1, -1};
+    int enemyPieces[3] = {-1, -1, -1};
+    int enemyPlayer = 0;
+    int num=-1;
+
+    if (rollNum == 6)
+    {
+        for (int i = 0; i < numPlayers; i++)
+        {
+            if (player->pieces[i].piecesPosition == base) // not home in base
+
+            {
+                *piecesNum[0] = i;
+                *piecesToHome = 1;
+            }
+        }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        if (player->pieces[i].piecesDirection == 1)
+        {
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (i != j && player->pieces[i].piecesPosition + rollNum == player->pieces[j].piecesPosition)
+                {
+                    int position = player->pieces[i].piecesPosition;
+
+                    int currentPiecesPosition = countAllyPiecesAtPosition(position, playerNum, &allayPieces, &i);
+                    if (currentPiecesPosition == 1)
+                    {
+                        *piecesToHome = 2;
+                        *piecesNum[0] = i;
+                    }
+                    if (currentPiecesPosition == 2)
+                    {
+                        *piecesToHome = 3;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                    }
+                }
+                int newPosition = player->pieces[i].piecesPosition + rollNum;
+                int newPosition1 = player->pieces[i].piecesPosition + (rollNum / 2);
+                int newPosition2 = player->pieces[i].piecesPosition + (rollNum / 3);
+                int prePosition = player->pieces[i].piecesPosition;
+                int enemyPiecesPosition = countEnemyPiecesAtPosition(newPosition, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition1 = countEnemyPiecesAtPosition(newPosition1, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition2 = countEnemyPiecesAtPosition(newPosition2, playerNum, &enemyPlayer, &enemyPieces);
+                int currentPiecesPosition = countAllyPiecesAtPosition(prePosition, playerNum, &allayPieces, &i);
+                // capture area
+                if (enemyPiecesPosition == 1)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 1:
+                        *piecesToHome = 5;
+                        *piecesNum[0] = i;
+                        break;
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 2)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 3)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // mystry cell
+                if (borad[newPosition].mysteryCell == 1 && currentPiecesPosition == 1)
+                {
+                    *piecesNum[0] = i;
+                    *piecesToHome = 8;
+                }
+                //block breaker
+                int currentPiecesPosition1 = countAllyPiecesAtPosition(newPosition1, playerNum, &allayPieces1,&num);
+                if (currentPiecesPosition1==2)
+                {
+                    if (currentPiecesPosition==2)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+
+                    }
+                    
+                }
+                if (currentPiecesPosition==2)
+                {
+                    if (enemyPiecesPosition1==3)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+                    }
+                    
+                }
+
+                
+            }
+        }
+    }
+}
+void blueplayer(Player *player, Borad *borad, int playerNum, int rollNum, int *piecesToHome, int (*piecesNum[3]))
+
+{
+    int allayPieces[3] = {-1, -1, -1};
+    int allayPieces1[3] = {-1, -1, -1};
+    int enemyPieces[3] = {-1, -1, -1};
+    int enemyPlayer = 0;
+    int num=-1;
+
+    if (rollNum == 6)
+    {
+        for (int i = 0; i < numPlayers; i++)
+        {
+            if (player->pieces[i].piecesPosition == base) // not home in base
+
+            {
+                *piecesNum[0] = i;
+                *piecesToHome = 1;
+            }
+        }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        if (player->pieces[i].piecesDirection == 1)
+        {
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (i != j && player->pieces[i].piecesPosition + rollNum == player->pieces[j].piecesPosition)
+                {
+                    int position = player->pieces[i].piecesPosition;
+
+                    int currentPiecesPosition = countAllyPiecesAtPosition(position, playerNum, &allayPieces, &i);
+                    if (currentPiecesPosition == 1)
+                    {
+                        *piecesToHome = 2;
+                        *piecesNum[0] = i;
+                    }
+                    if (currentPiecesPosition == 2)
+                    {
+                        *piecesToHome = 3;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                    }
+                }
+                int newPosition = player->pieces[i].piecesPosition + rollNum;
+                int newPosition1 = player->pieces[i].piecesPosition + (rollNum / 2);
+                int newPosition2 = player->pieces[i].piecesPosition + (rollNum / 3);
+                int prePosition = player->pieces[i].piecesPosition;
+                int enemyPiecesPosition = countEnemyPiecesAtPosition(newPosition, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition1 = countEnemyPiecesAtPosition(newPosition1, playerNum, &enemyPlayer, &enemyPieces);
+                int enemyPiecesPosition2 = countEnemyPiecesAtPosition(newPosition2, playerNum, &enemyPlayer, &enemyPieces);
+                int currentPiecesPosition = countAllyPiecesAtPosition(prePosition, playerNum, &allayPieces, &i);
+                // capture area
+                if (enemyPiecesPosition == 1)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 1:
+                        *piecesToHome = 5;
+                        *piecesNum[0] = i;
+                        break;
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 2)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 2:
+                        *piecesToHome = 6;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        break;
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (enemyPiecesPosition == 3)
+                {
+                    switch (currentPiecesPosition)
+                    {
+                    case 3:
+                        *piecesToHome = 7;
+                        *piecesNum[0] = i;
+                        *piecesNum[1] = allayPieces[0];
+                        *piecesNum[2] = allayPieces[1];
+
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // mystry cell
+                if (borad[newPosition].mysteryCell == 1 && currentPiecesPosition == 1)
+                {
+                    *piecesNum[0] = i;
+                    *piecesToHome = 8;
+                }
+                //block breaker
+                int currentPiecesPosition1 = countAllyPiecesAtPosition(newPosition1, playerNum, &allayPieces1,&num);
+                if (currentPiecesPosition1==2)
+                {
+                    if (currentPiecesPosition==2)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+
+                    }
+                    
+                }
+                if (currentPiecesPosition==2)
+                {
+                    if (enemyPiecesPosition1==3)
+                    {
+                        blockBreaker(player,borad,playerNum,allayPieces[0],allayPieces[1],-1);
+                        *piecesNum[0]=allayPieces[0];
+                        *piecesToHome=10;
+                    }
+                    
+                }
+
+                
+            }
+        }
+    }
 }

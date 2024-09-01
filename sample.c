@@ -132,3 +132,18 @@ for (short i = 0; i < numPlayers; i++)
                 }
             }
         }
+         int enemyPieces[3] = {-1, -1, -1};
+                 for (int i = 0; i < 4; i++)
+        {int countwin=0;
+            if(player[playerNum].pieces[i].startgame==0)
+            {
+                countwin++;
+            }
+            if (countwin==4)
+            {
+                printf("%c player win!!!!",player[playerNum].playercolor);
+                stop=0;
+
+            }
+            
+        }
