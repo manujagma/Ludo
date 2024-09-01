@@ -82,7 +82,7 @@ int coinTos()
 }
 
 // functions
-void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], int rollNum, int *picesToHome, int sixTimesBlock, int howManyPiecesStart);
+void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], int rollNum, int *picesToHome,int howManyPiecesStart);
 int playerstart(int *startPlayer);
 void playerInstall(Player *player);
 void boradconst(Player *player, Borad *borad);
@@ -192,7 +192,7 @@ int piecesNum1[3];
         playerNum%=4;
         // role dice 
        int rollNum = roll();
-        
+        printf("roll number is %d",rollNum);
         howManyTimesPlay[playerNum]++;
        
        
@@ -224,7 +224,7 @@ for (int i = 0; i < 3; i++) {
         piecesNum1[i] = -1;  // Or some default value, to avoid uninitialized state
     }
                     printf("move\n");
-        playermove(&player[playerNum],borad,&playerNum, piecesNum1, rollNum, &picesToHome, 0, howManyPiecesStart);
+        playermove(&player[playerNum],borad,&playerNum, piecesNum1, rollNum, &picesToHome, howManyPiecesStart);
         playerNum++;
 }
 
@@ -318,16 +318,15 @@ void playerInstall(Player *player)
         }
     }
 }
-void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], int rollNum, int *picesToHome, int sixTimesBlock, int howManyPiecesStart)
+void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], int rollNum, int *picesToHome, int howManyPiecesStart)
 {
     // in this function only do move pieces and cut enmy pieces and go to mystrey cell
     int enemyPlayer = 0;
 
-    while (rollNum==0)
+    while (rollNum)
     {
         int enemyPieces[3] = {-1, -1, -1};
         int allayPieces[3] = {-1, -1, -1};
-        int piecesNum[3] = {-1};
 
         // give picecs to X location from base
 
@@ -356,18 +355,10 @@ void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], 
             player->pieces[piecesNum[0]].pastpiecesDirection = 0;
             player->pieces[piecesNum[0]].pieceInHomeCell=0;
             howManyPiecesStart++;
-
-            int directionOfPieces = coinTos();
-            if (directionOfPieces == 0)
-            {
                 player->pieces[piecesNum[0]].piecesDirection = 1;
+                printf("%c player pieces %d go to %d and start game\n", player->playercolor, piecesNum[0], player->pieces[piecesNum[0]].piecesPosition);
+
                 // print he pieces start game and his direction is colckwise
-            }
-            else if (directionOfPieces == 1)
-            {
-                player->pieces[piecesNum[0]].piecesDirection = 2;
-                // print he pieces start game and his direction is anti clockwise
-            }
             rollNum = 0;
         }
 
@@ -398,7 +389,7 @@ void playermove(Player *player, Borad *borad, int *playerNum, int piecesNum[3], 
             }
 
             // 0ne pieces
-            if (assignedCount == 1 &&(sixTimesBlock==0 || sixTimesBlock==1))
+            if (assignedCount == 1)
             {
                 if (newPositionEnemyPlayerPieces == 1)
                 {
