@@ -133,17 +133,57 @@ for (short i = 0; i < numPlayers; i++)
             }
         }
          int enemyPieces[3] = {-1, -1, -1};
-                 for (int i = 0; i < 4; i++)
-        {int countwin=0;
-            if(player[playerNum].pieces[i].startgame==0)
-            {
-                countwin++;
-            }
-            if (countwin==4)
-            {
-                printf("%c player win!!!!",player[playerNum].playercolor);
-                stop=0;
+if (rollNum == 6)
+        {
 
+            checkSixTimes++;
+            if (checkSixTimes == 3)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    if (player[playerNum].pieces[i].mysteryCell == 1 && player[playerNum].pieces[i].turnSkkiped > 0 && player[playerNum].pieces[i].piecesPosition == KotuwaCell)
+                    {
+                        player[playerNum].pieces[i].pastHomeHowTimes = 0;
+                        player[playerNum].pieces[i].pastpiecesDirection = 0;
+                        player[playerNum].pieces[i].piecesCaptured = 0;
+                        player[playerNum].pieces[i].piecesDirection = 0;
+                        player[playerNum].pieces[i].piecesPosition = base;
+                        player[playerNum].pieces[i].startgame = -1;
+                        pieces[playerNum][i] = base;
+                        printf("%c player %d pieces go to base because he trapped in Kotuwa cell\n", player[playerNum].playercolor, i);
+                    }
+                }
+
+                if (player[playerNum].piecesBlock == 1)
+                {
+                    int array[2] = {0, 0};
+                    for (int i = 0; i < 4; i++)
+                    {
+                        for (int j = 0; j < 4; j++)
+                        {
+
+                            if (i != j && player[playerNum].pieces[i].piecesBlock == 1 && player[playerNum].pieces[j].piecesBlock == 1)
+                            {
+                                if (player[playerNum].pieces[i].piecesPosition == player[playerNum].pieces[j].piecesPosition)
+                                {
+                                    if (array[0] == 0)
+                                    {
+                                        array[0] = i;
+                                    }
+                                    else if (array[1] == 0)
+                                    {
+                                        array[1] = i;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    int arry1[3] = { array[0],-1,-1};
+                    playermove(&player[playerNum],borad,&playerNum, arry1, 6, 0, 1, howManyPiecesStart);
+                    int arry2[3] = {array[2], -1, -1};
+                    playermove(&player[playerNum],borad,&playerNum, arry2, 6, 0, 1, howManyPiecesStart);
+                    // break down block and move them six times
+                    blockBreaker(player, borad, playerNum, array[0], array[1], -1);
+                }
             }
-            
         }
